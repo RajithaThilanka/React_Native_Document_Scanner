@@ -8,17 +8,20 @@ import {
   TouchableOpacity,
   Text,
   StyleSheet,
+  FlatList,
 } from "react-native";
 import DocumentScanner from "react-native-document-scanner-plugin";
 
+import * as FileSystem from "expo-file-system";
+import * as Sharing from "expo-sharing";
+import { PDFDocument } from "pdf-lib";
+
 export default () => {
-  const [scannedImage, setScannedImage] = useState<string | undefined>();
+  const [scannedImages, setScannedImages] = useState<string[]>([]);
   const [hasPermission, setHasPermission] = useState<boolean | null>(null);
 
-  // Function to request camera permission
   const requestCameraPermission = async (): Promise<boolean> => {
     if (Platform.OS !== "android") {
-      // iOS handles permissions differently
       return true;
     }
 
@@ -45,19 +48,18 @@ export default () => {
   };
 
   const scanDocument = async () => {
-    // First check/request permission
     const permissionGranted = await requestCameraPermission();
-
     if (!permissionGranted) {
-      // Permission not granted, don't proceed
       return;
     }
 
     try {
-      const { scannedImages } = await DocumentScanner.scanDocument();
+      const { scannedImages } = await DocumentScanner.scanDocument({
+        maxNumDocuments: 20,
+      });
 
       if (scannedImages && scannedImages.length > 0) {
-        setScannedImage(scannedImages[0]);
+        setScannedImages(scannedImages);
       }
     } catch (error) {
       console.error("Error scanning document:", error);
@@ -68,7 +70,6 @@ export default () => {
     }
   };
 
-  // Check permission on component mount
   useEffect(() => {
     const checkPermission = async () => {
       if (Platform.OS === "android") {
@@ -78,11 +79,9 @@ export default () => {
         setHasPermission(result);
 
         if (result) {
-          // If we already have permission, scan immediately
           scanDocument();
         }
       } else {
-        // For iOS, we'll assume permission is handled by the scanner
         setHasPermission(true);
         scanDocument();
       }
@@ -91,7 +90,6 @@ export default () => {
     checkPermission();
   }, []);
 
-  // Component to show when permission is denied
   const PermissionDeniedView = () => (
     <View style={styles.container}>
       <Text style={styles.title}>Camera Permission Required</Text>
@@ -105,16 +103,22 @@ export default () => {
     </View>
   );
 
-  // Main render
   if (hasPermission === false) {
     return <PermissionDeniedView />;
   }
 
-  return scannedImage ? (
-    <Image
-      resizeMode="contain"
-      style={{ width: "100%", height: "100%" }}
-      source={{ uri: scannedImage }}
+  return scannedImages.length > 0 ? (
+    <FlatList
+      data={scannedImages}
+      keyExtractor={(item, index) => `${item}-${index}`}
+      contentContainerStyle={styles.listContainer}
+      renderItem={({ item }) => (
+        <Image
+          resizeMode="contain"
+          style={styles.scannedImage}
+          source={{ uri: item }}
+        />
+      )}
     />
   ) : (
     <View style={styles.container}>
@@ -161,5 +165,17 @@ const styles = StyleSheet.create({
     color: "white",
     fontSize: 16,
     fontWeight: "600",
+  },
+  scannedImage: {
+    width: "100%",
+    height: 300,
+    marginBottom: 20,
+    borderRadius: 8,
+    borderColor: "#ccc",
+    borderWidth: 1,
+  },
+  listContainer: {
+    padding: 10,
+    backgroundColor: "#fff",
   },
 });
