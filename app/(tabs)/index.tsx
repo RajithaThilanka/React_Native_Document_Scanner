@@ -2,15 +2,15 @@ import React, { useState, useEffect } from "react";
 import {
   Platform,
   PermissionsAndroid,
-  Image,
   Alert,
   View,
   TouchableOpacity,
   Text,
-  StyleSheet,
-  FlatList,
+  SafeAreaView,
 } from "react-native";
+import tw from "tailwind-react-native-classnames";
 import DocumentScanner from "react-native-document-scanner-plugin";
+import { SafeAreaProvider } from "react-native-safe-area-context";
 
 import * as FileSystem from "expo-file-system";
 import * as Sharing from "expo-sharing";
@@ -19,7 +19,13 @@ import { PDFDocument } from "pdf-lib";
 export default () => {
   const [scannedImages, setScannedImages] = useState<string[]>([]);
   const [hasPermission, setHasPermission] = useState<boolean | null>(null);
-  const [savedPDFs, setSavedPDFs] = useState<string[]>([]);
+  const [file, setFile] = useState<{
+    uri: string;
+    name: string;
+    size: number;
+    mimeType: string;
+    data: Uint8Array | null;
+  } | null>(null);
 
   const requestCameraPermission = async (): Promise<boolean> => {
     if (Platform.OS !== "android") {
@@ -90,6 +96,7 @@ export default () => {
 
     checkPermission();
   }, []);
+
   const uint8ArrayToBase64 = (uint8Array: Uint8Array): string => {
     let binary = "";
     const len = uint8Array.byteLength;
@@ -98,6 +105,7 @@ export default () => {
     }
     return global.btoa(binary);
   };
+
   const createPDF = async (images: string[]) => {
     try {
       // Create a new PDF document
@@ -105,7 +113,6 @@ export default () => {
 
       // Add each image to the PDF
       for (const imagePath of images) {
-        // Convert file:// URI to base64
         const imageBytes = await FileSystem.readAsStringAsync(imagePath, {
           encoding: FileSystem.EncodingType.Base64,
         });
@@ -134,7 +141,16 @@ export default () => {
       await FileSystem.writeAsStringAsync(pdfUri, base64Pdf, {
         encoding: FileSystem.EncodingType.Base64,
       });
-      await Sharing.shareAsync(pdfUri);
+
+      const fileInfo = await FileSystem.getInfoAsync(pdfUri);
+      setFile({
+        uri: pdfUri,
+        name: `scanned_document_${Date.now()}.pdf`,
+        size: fileInfo.exists ? (fileInfo as any).size || 0 : 0,
+        mimeType: "application/pdf",
+        data: pdfBytes,
+      });
+      // await Sharing.shareAsync(pdfUri);
 
       return pdfUri;
     } catch (error) {
@@ -150,121 +166,84 @@ export default () => {
   };
 
   const PermissionDeniedView = () => (
-    <View style={styles.container}>
-      <Text style={styles.title}>Camera Permission Required</Text>
-      <Text style={styles.message}>
+    <View style={tw`flex-1 justify-center items-center px-5 py-5`}>
+      <Text style={tw`text-2xl font-bold mb-4`}>
+        Camera Permission Required
+      </Text>
+      <Text style={tw`text-base text-center mb-6 text-gray-600`}>
         This app needs access to your camera to scan documents. Please grant the
         permission to continue.
       </Text>
-      <TouchableOpacity style={styles.button} onPress={requestCameraPermission}>
-        <Text style={styles.buttonText}>Grant Permission</Text>
+      <TouchableOpacity
+        style={tw`bg-blue-500 px-6 py-3 rounded-lg`}
+        onPress={requestCameraPermission}
+      >
+        <Text style={tw`text-white font-semibold text-base`}>
+          Grant Permission
+        </Text>
       </TouchableOpacity>
     </View>
   );
 
   if (hasPermission === false) {
-    return <PermissionDeniedView />;
+    return (
+      <SafeAreaProvider>
+        <SafeAreaView style={tw`flex-1`}>
+          <PermissionDeniedView />
+        </SafeAreaView>
+      </SafeAreaProvider>
+    );
   }
 
-  return scannedImages.length > 0 ? (
-    <View style={{ flex: 1 }}>
-      <View style={styles.buttonContainer}>
-        <TouchableOpacity
-          style={styles.exportButton}
-          onPress={() => createPDF(scannedImages)}
-        >
-          <Text style={styles.buttonText}>Export as PDF</Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={[styles.button, { marginLeft: 10 }]}
-          onPress={scanDocument}
-        >
-          <Text style={styles.buttonText}>Scan More</Text>
-        </TouchableOpacity>
-      </View>
-      <FlatList
-        data={scannedImages}
-        keyExtractor={(item, index) => `${item}-${index}`}
-        contentContainerStyle={styles.listContainer}
-        renderItem={({ item }) => (
-          <Image
-            resizeMode="contain"
-            style={styles.scannedImage}
-            source={{ uri: item }}
-          />
+  return (
+    <SafeAreaProvider>
+      <SafeAreaView style={tw`flex-1`}>
+        {scannedImages.length > 0 ? (
+          <View style={tw`flex-1 justify-center items-center px-5`}>
+            <View
+              style={tw`flex-row justify-center py-5 bg-white border-t border-gray-200`}
+            >
+              <TouchableOpacity
+                style={tw`bg-green-500 px-6 py-3 rounded-lg`}
+                onPress={() => createPDF(scannedImages)}
+              >
+                <Text style={tw`text-white font-semibold text-base`}>
+                  Export as PDF
+                </Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={tw`bg-blue-500 px-6 py-3 rounded-lg ml-3`}
+                onPress={scanDocument}
+              >
+                <Text style={tw`text-white font-semibold text-base`}>
+                  Scan More
+                </Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        ) : (
+          <View style={tw`flex-1 justify-center items-center px-5`}>
+            <Text style={tw`text-2xl font-bold mb-4`}>Document Scanner</Text>
+            <Text style={tw`text-base text-center mb-6 text-gray-600`}>
+              {hasPermission === null
+                ? "Checking camera permissions..."
+                : "Ready to scan documents"}
+            </Text>
+            {hasPermission && (
+              <View style={tw`items-center`}>
+                <TouchableOpacity
+                  style={tw`bg-blue-500 px-6 py-3 rounded-lg`}
+                  onPress={scanDocument}
+                >
+                  <Text style={tw`text-white font-semibold text-base`}>
+                    Scan Document
+                  </Text>
+                </TouchableOpacity>
+              </View>
+            )}
+          </View>
         )}
-      />
-    </View>
-  ) : (
-    <View style={styles.container}>
-      <Text style={styles.title}>Document Scanner</Text>
-      <Text style={styles.message}>
-        {hasPermission === null
-          ? "Checking camera permissions..."
-          : "Ready to scan documents"}
-      </Text>
-      {hasPermission && (
-        <TouchableOpacity style={styles.button} onPress={scanDocument}>
-          <Text style={styles.buttonText}>Scan Document</Text>
-        </TouchableOpacity>
-      )}
-    </View>
+      </SafeAreaView>
+    </SafeAreaProvider>
   );
 };
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-    padding: 20,
-  },
-  title: {
-    fontSize: 22,
-    fontWeight: "bold",
-    marginBottom: 16,
-  },
-  message: {
-    fontSize: 16,
-    textAlign: "center",
-    marginBottom: 24,
-    color: "#555",
-  },
-  button: {
-    backgroundColor: "#007AFF",
-    paddingHorizontal: 24,
-    paddingVertical: 12,
-    borderRadius: 8,
-  },
-  buttonText: {
-    color: "white",
-    fontSize: 16,
-    fontWeight: "600",
-  },
-  scannedImage: {
-    width: "100%",
-    height: 300,
-    marginBottom: 20,
-    borderRadius: 8,
-    borderColor: "#ccc",
-    borderWidth: 1,
-  },
-  listContainer: {
-    padding: 10,
-    backgroundColor: "#fff",
-  },
-  buttonContainer: {
-    flexDirection: "row",
-    justifyContent: "center",
-    paddingVertical: 20,
-    backgroundColor: "#fff",
-    borderTopWidth: 1,
-    borderTopColor: "#eee",
-  },
-  exportButton: {
-    backgroundColor: "#34C759",
-    paddingHorizontal: 24,
-    paddingVertical: 12,
-    borderRadius: 8,
-  },
-});
