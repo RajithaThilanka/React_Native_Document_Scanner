@@ -19,6 +19,7 @@ import { PDFDocument } from "pdf-lib";
 export default () => {
   const [scannedImages, setScannedImages] = useState<string[]>([]);
   const [hasPermission, setHasPermission] = useState<boolean | null>(null);
+  const [savedPDFs, setSavedPDFs] = useState<string[]>([]);
 
   const requestCameraPermission = async (): Promise<boolean> => {
     if (Platform.OS !== "android") {
@@ -89,6 +90,64 @@ export default () => {
 
     checkPermission();
   }, []);
+  const uint8ArrayToBase64 = (uint8Array: Uint8Array): string => {
+    let binary = "";
+    const len = uint8Array.byteLength;
+    for (let i = 0; i < len; i++) {
+      binary += String.fromCharCode(uint8Array[i]);
+    }
+    return global.btoa(binary);
+  };
+  const createPDF = async (images: string[]) => {
+    try {
+      // Create a new PDF document
+      const pdfDoc = await PDFDocument.create();
+
+      // Add each image to the PDF
+      for (const imagePath of images) {
+        // Convert file:// URI to base64
+        const imageBytes = await FileSystem.readAsStringAsync(imagePath, {
+          encoding: FileSystem.EncodingType.Base64,
+        });
+        const image = await pdfDoc.embedJpg(imageBytes);
+
+        // Add a new page for this image
+        const page = pdfDoc.addPage([image.width, image.height]);
+
+        // Draw the image on the page
+        page.drawImage(image, {
+          x: 0,
+          y: 0,
+          width: image.width,
+          height: image.height,
+        });
+      }
+
+      // Save the PDF
+      const pdfBytes = await pdfDoc.save();
+
+      // Write the PDF to a file
+      const pdfUri = `${
+        FileSystem.documentDirectory
+      }scanned_document_${Date.now()}.pdf`;
+      const base64Pdf = uint8ArrayToBase64(pdfBytes);
+      await FileSystem.writeAsStringAsync(pdfUri, base64Pdf, {
+        encoding: FileSystem.EncodingType.Base64,
+      });
+      await Sharing.shareAsync(pdfUri);
+
+      return pdfUri;
+    } catch (error) {
+      const errorMessage = (error as Error).message || error;
+
+      // Log the error to console
+      console.error("Error creating PDF:", errorMessage);
+      Alert.alert(
+        "PDF Creation Error",
+        `Could not create PDF from scanned images. Error: ${errorMessage}`
+      );
+    }
+  };
 
   const PermissionDeniedView = () => (
     <View style={styles.container}>
@@ -108,18 +167,34 @@ export default () => {
   }
 
   return scannedImages.length > 0 ? (
-    <FlatList
-      data={scannedImages}
-      keyExtractor={(item, index) => `${item}-${index}`}
-      contentContainerStyle={styles.listContainer}
-      renderItem={({ item }) => (
-        <Image
-          resizeMode="contain"
-          style={styles.scannedImage}
-          source={{ uri: item }}
-        />
-      )}
-    />
+    <View style={{ flex: 1 }}>
+      <View style={styles.buttonContainer}>
+        <TouchableOpacity
+          style={styles.exportButton}
+          onPress={() => createPDF(scannedImages)}
+        >
+          <Text style={styles.buttonText}>Export as PDF</Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={[styles.button, { marginLeft: 10 }]}
+          onPress={scanDocument}
+        >
+          <Text style={styles.buttonText}>Scan More</Text>
+        </TouchableOpacity>
+      </View>
+      <FlatList
+        data={scannedImages}
+        keyExtractor={(item, index) => `${item}-${index}`}
+        contentContainerStyle={styles.listContainer}
+        renderItem={({ item }) => (
+          <Image
+            resizeMode="contain"
+            style={styles.scannedImage}
+            source={{ uri: item }}
+          />
+        )}
+      />
+    </View>
   ) : (
     <View style={styles.container}>
       <Text style={styles.title}>Document Scanner</Text>
@@ -177,5 +252,19 @@ const styles = StyleSheet.create({
   listContainer: {
     padding: 10,
     backgroundColor: "#fff",
+  },
+  buttonContainer: {
+    flexDirection: "row",
+    justifyContent: "center",
+    paddingVertical: 20,
+    backgroundColor: "#fff",
+    borderTopWidth: 1,
+    borderTopColor: "#eee",
+  },
+  exportButton: {
+    backgroundColor: "#34C759",
+    paddingHorizontal: 24,
+    paddingVertical: 12,
+    borderRadius: 8,
   },
 });
