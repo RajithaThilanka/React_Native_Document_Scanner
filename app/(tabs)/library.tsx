@@ -179,7 +179,7 @@ export default function LibraryPage() {
 
   return (
     <SafeAreaView style={tw`flex-1 ${colors.background}`}>
-      <View style={tw`bg-blue-800 p-4`}>
+      <View style={tw` p-4`}>
         <Text style={tw`text-white text-xl font-bold`}>Library</Text>
       </View>
 
