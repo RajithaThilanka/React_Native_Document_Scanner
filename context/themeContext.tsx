@@ -1,82 +1,106 @@
-import React, { createContext, useState, useContext, useEffect } from "react";
-import { useColorScheme } from "react-native";
-import * as SecureStore from "expo-secure-store";
+// context/themeContext.tsx
+import React, {
+  createContext,
+  useContext,
+  useState,
+  useEffect,
+  ReactNode,
+} from "react";
+import { Appearance } from "react-native";
 
-interface ThemeContextType {
-  isDarkMode: boolean;
-  toggleTheme: () => void;
-  setDarkMode: (value: boolean) => void;
+type Theme = "light" | "dark";
+
+export interface ThemeColors {
+  background: string;
+  card: string;
+  text: string;
+  subtext: string;
+  border: string;
+  primary: string;
+  primaryDark: string;
+  accent: string;
+  danger: string;
+  dangerBg: string;
+  statusBar: string;
+  headerBg: string;
+  headerText: string;
 }
 
-const ThemeContext = createContext<ThemeContextType>({
-  isDarkMode: false,
-  toggleTheme: () => {},
-  setDarkMode: () => {},
-});
+interface ThemeContextType {
+  theme: Theme;
+  isDarkMode: boolean;
+  toggleTheme: () => void;
+  colors: ThemeColors;
+}
 
-export const useThemeContext = () => useContext(ThemeContext);
+const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 
-export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({
-  children,
-}) => {
-  const deviceTheme = useColorScheme();
-  const [isDarkMode, setIsDarkMode] = useState<boolean>(false);
-  const [isLoading, setIsLoading] = useState<boolean>(true);
+export const ThemeProviderCustom = ({ children }: { children: ReactNode }) => {
+  const systemTheme = Appearance.getColorScheme() as Theme;
+  const [theme, setTheme] = useState<Theme>(systemTheme ?? "light");
+  const [manualTheme, setManualTheme] = useState<Theme | null>(null);
 
-  // Load saved theme preference on app start
   useEffect(() => {
-    const loadThemePreference = async () => {
-      try {
-        const savedTheme = await SecureStore.getItemAsync("theme_preference");
-
-        if (savedTheme !== null) {
-          // Use saved preference if it exists
-          setIsDarkMode(savedTheme === "dark");
-        } else {
-          // Otherwise use device theme
-          setIsDarkMode(deviceTheme === "dark");
-        }
-      } catch (error) {
-        console.error("Error loading theme preference:", error);
-        // Fallback to device theme
-        setIsDarkMode(deviceTheme === "dark");
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    loadThemePreference();
+    const subscription = Appearance.addChangeListener(({ colorScheme }) => {
+      setTheme(colorScheme as Theme);
+    });
+    return () => subscription.remove();
   }, []);
 
-  // Save theme preference whenever it changes
-  useEffect(() => {
-    if (!isLoading) {
-      const saveThemePreference = async () => {
-        try {
-          await SecureStore.setItemAsync(
-            "theme_preference",
-            isDarkMode ? "dark" : "light"
-          );
-        } catch (error) {
-          console.error("Error saving theme preference:", error);
-        }
-      };
-
-      saveThemePreference();
-    }
-  }, [isDarkMode, isLoading]);
-
   const toggleTheme = () => {
-    setIsDarkMode((prev) => !prev);
+    const newTheme = (theme === "dark" ? "light" : "dark") as Theme;
+    setTheme(newTheme);
+    setManualTheme(newTheme);
   };
 
-  const setDarkMode = (value: boolean) => {
-    setIsDarkMode(value);
+  const colors: ThemeColors =
+    theme === "dark"
+      ? {
+          background: "bg-gray-900",
+          card: "bg-gray-800",
+          text: "text-white",
+          subtext: "text-gray-400",
+          border: "border-gray-700",
+          primary: "bg-blue-600",
+          primaryDark: "bg-blue-800",
+          accent: "bg-green-600",
+          danger: "text-red-400",
+          dangerBg: "bg-red-900 bg-opacity-30",
+          statusBar: "#1f2937",
+          headerBg: "bg-gray-800",
+          headerText: "text-white",
+        }
+      : {
+          background: "bg-gray-50",
+          card: "bg-white",
+          text: "text-gray-800",
+          subtext: "text-gray-500",
+          border: "border-gray-200",
+          primary: "bg-blue-600",
+          primaryDark: "bg-blue-800",
+          accent: "bg-green-600",
+          danger: "text-red-500",
+          dangerBg: "bg-red-50",
+          statusBar: "#2563eb",
+          headerBg: "bg-blue-800",
+          headerText: "text-white",
+        };
+
+  const value = {
+    theme,
+    isDarkMode: theme === "dark",
+    toggleTheme,
+    colors,
   };
 
   return (
-    <ThemeContext.Provider value={{ isDarkMode, toggleTheme, setDarkMode }}>
-      {children}
-    </ThemeContext.Provider>
+    <ThemeContext.Provider value={value}>{children}</ThemeContext.Provider>
   );
+};
+
+export const useThemeContext = () => {
+  const context = useContext(ThemeContext);
+  if (!context)
+    throw new Error("useThemeContext must be used inside ThemeProviderCustom");
+  return context;
 };

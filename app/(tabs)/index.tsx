@@ -10,7 +10,6 @@ import {
   StatusBar,
   Image,
   FlatList,
-  useColorScheme,
   Switch,
 } from "react-native";
 import tw from "tailwind-react-native-classnames";
@@ -21,10 +20,10 @@ import * as Sharing from "expo-sharing";
 import { PDFDocument } from "pdf-lib";
 import { FileData, ThemeColors } from "../app.types";
 import useStorePdf from "../hooks/use-store-pdf";
+import { useThemeContext } from "@/context/themeContext";
 
 export default () => {
-  const deviceTheme = useColorScheme();
-  const [isDarkMode, setIsDarkMode] = useState<boolean>(deviceTheme === "dark");
+  const { colors, isDarkMode, toggleTheme } = useThemeContext();
 
   const [scannedImages, setScannedImages] = useState<string[]>([]);
   const [hasPermission, setHasPermission] = useState<boolean | null>(null);
@@ -32,42 +31,6 @@ export default () => {
   const [isProcessing, setIsProcessing] = useState<boolean>(false);
   const [selectedView, setSelectedView] = useState<"grid" | "list">("grid");
   const { storePdfToSecureStorage } = useStorePdf();
-
-  const colors: ThemeColors = isDarkMode
-    ? {
-        background: "bg-gray-900",
-        card: "bg-gray-800",
-        text: "text-white",
-        subtext: "text-gray-400",
-        border: "border-gray-700",
-        primary: "bg-blue-600",
-        primaryDark: "bg-blue-800",
-        accent: "bg-green-600",
-        danger: "text-red-400",
-        dangerBg: "bg-red-900 bg-opacity-30",
-        statusBar: "#1f2937",
-        headerBg: "bg-gray-800",
-        headerText: "text-white",
-      }
-    : {
-        background: "bg-gray-50",
-        card: "bg-white",
-        text: "text-gray-800",
-        subtext: "text-gray-500",
-        border: "border-gray-200",
-        primary: "bg-blue-600",
-        primaryDark: "bg-blue-800",
-        accent: "bg-green-600",
-        danger: "text-red-500",
-        dangerBg: "bg-red-50",
-        statusBar: "#2563eb",
-        headerBg: "bg-blue-800",
-        headerText: "text-white",
-      };
-
-  const toggleTheme = (): void => {
-    setIsDarkMode((prev) => !prev);
-  };
 
   const requestCameraPermission = async (): Promise<boolean> => {
     if (Platform.OS !== "android") return true;
@@ -134,11 +97,6 @@ export default () => {
 
     checkPermission();
   }, []);
-
-  // Update theme based on device settings
-  useEffect(() => {
-    setIsDarkMode(deviceTheme === "dark");
-  }, [deviceTheme]);
 
   const uint8ArrayToBase64 = (uint8Array: Uint8Array): string => {
     let binary = "";

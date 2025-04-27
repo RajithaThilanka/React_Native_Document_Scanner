@@ -7,7 +7,6 @@ import {
   TouchableOpacity,
   ScrollView,
   Alert,
-  useColorScheme,
   Platform,
   ActivityIndicator,
 } from "react-native";
@@ -18,6 +17,7 @@ import * as FileSystem from "expo-file-system";
 import * as Sharing from "expo-sharing";
 import * as Application from "expo-application";
 import * as Updates from "expo-updates";
+import { useThemeContext } from "@/context/themeContext";
 
 interface PDFMetadata {
   uri: string;
@@ -37,24 +37,13 @@ interface SettingItemProps {
 }
 
 export default function SettingsPage() {
-  const deviceTheme = useColorScheme();
-  const isDarkMode = deviceTheme === "dark";
+  const { colors, isDarkMode, toggleTheme } = useThemeContext();
+
   const [totalStorage, setTotalStorage] = useState<string>("0 KB");
   const [appVersion, setAppVersion] = useState<string>("1.0.0");
   const [isCalculating, setIsCalculating] = useState<boolean>(false);
   const [isCheckingForUpdate, setIsCheckingForUpdate] =
     useState<boolean>(false);
-  const [followSystem, setFollowSystem] = useState(true);
-  const [darkModeEnabled, setDarkModeEnabled] = useState(isDarkMode);
-
-  const colors = {
-    background: isDarkMode ? "bg-gray-900" : "bg-gray-50",
-    card: isDarkMode ? "bg-gray-800" : "bg-white",
-    text: isDarkMode ? "text-white" : "text-gray-800",
-    subtext: isDarkMode ? "text-gray-400" : "text-gray-500",
-    primary: "bg-blue-600",
-    border: isDarkMode ? "border-gray-700" : "border-gray-200",
-  };
 
   useEffect(() => {
     calculateStorage();
@@ -84,9 +73,7 @@ export default function SettingsPage() {
       }
 
       const existingPdfs: PDFMetadata[] = JSON.parse(existingPdfsString);
-      let totalSize = 0;
-      for (const pdf of existingPdfs) totalSize += pdf.size;
-
+      const totalSize = existingPdfs.reduce((acc, curr) => acc + curr.size, 0);
       const formattedSize =
         totalSize > 1024 * 1024
           ? `${(totalSize / (1024 * 1024)).toFixed(2)} MB`
@@ -104,7 +91,7 @@ export default function SettingsPage() {
   const clearAllData = async () => {
     Alert.alert(
       "Clear All Data",
-      "Are you sure you want to delete all scanned documents? This cannot be undone.",
+      "Are you sure you want to delete all scanned documents?",
       [
         { text: "Cancel", style: "cancel" },
         {
@@ -229,26 +216,17 @@ export default function SettingsPage() {
   return (
     <SafeAreaView style={tw`flex-1 ${colors.background}`}>
       <View style={tw`p-4`}>
-        <Text style={tw`text-white text-xl font-bold`}>Settings</Text>
+        <Text style={tw`${colors.text} text-xl font-bold`}>Settings</Text>
       </View>
 
       <ScrollView style={tw`p-4`}>
         <Text style={tw`${colors.subtext} text-xs mb-2`}>Appearance</Text>
         <SettingItem icon="color-palette-outline" label="Dark Mode">
           <Switch
-            value={darkModeEnabled}
-            onValueChange={setDarkModeEnabled}
+            value={isDarkMode}
+            onValueChange={toggleTheme}
             trackColor={{ false: "#767577", true: "#2563eb" }}
-            thumbColor={darkModeEnabled ? "#ffffff" : "#f4f3f4"}
-          />
-        </SettingItem>
-
-        <SettingItem icon="phone-portrait-outline" label="Follow System Theme">
-          <Switch
-            value={followSystem}
-            onValueChange={() => setFollowSystem(!followSystem)}
-            trackColor={{ false: "#767577", true: "#2563eb" }}
-            thumbColor={followSystem ? "#ffffff" : "#f4f3f4"}
+            thumbColor={isDarkMode ? "#ffffff" : "#f4f3f4"}
           />
         </SettingItem>
 

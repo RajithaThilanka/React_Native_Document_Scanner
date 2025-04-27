@@ -6,13 +6,13 @@ import {
   TouchableOpacity,
   FlatList,
   Alert,
-  useColorScheme,
 } from "react-native";
 import tw from "tailwind-react-native-classnames";
 import * as SecureStore from "expo-secure-store";
 import * as Sharing from "expo-sharing";
 import { Ionicons } from "@expo/vector-icons";
 import { useFocusEffect } from "expo-router";
+import { useThemeContext } from "@/context/themeContext";
 
 interface PDFMetadata {
   uri: string;
@@ -23,20 +23,10 @@ interface PDFMetadata {
 }
 
 export default function LibraryPage() {
-  const deviceTheme = useColorScheme();
-  const isDarkMode = deviceTheme === "dark";
+  const { colors, isDarkMode } = useThemeContext();
+
   const [pdfFiles, setPdfFiles] = useState<PDFMetadata[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-
-  const colors = {
-    background: isDarkMode ? "bg-gray-900" : "bg-gray-50",
-    card: isDarkMode ? "bg-gray-800" : "bg-white",
-    text: isDarkMode ? "text-white" : "text-gray-800",
-    subtext: isDarkMode ? "text-gray-400" : "text-gray-500",
-    primary: "bg-blue-600",
-    accent: "bg-green-600",
-    border: isDarkMode ? "border-gray-700" : "border-gray-200",
-  };
 
   useFocusEffect(
     useCallback(() => {
