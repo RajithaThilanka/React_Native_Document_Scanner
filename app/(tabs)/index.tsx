@@ -19,30 +19,8 @@ import { SafeAreaProvider } from "react-native-safe-area-context";
 import * as FileSystem from "expo-file-system";
 import * as Sharing from "expo-sharing";
 import { PDFDocument } from "pdf-lib";
-
-interface FileData {
-  uri: string;
-  name: string;
-  size: number;
-  mimeType: string;
-  data: Uint8Array | null;
-}
-
-interface ThemeColors {
-  background: string;
-  card: string;
-  text: string;
-  subtext: string;
-  border: string;
-  primary: string;
-  primaryDark: string;
-  accent: string;
-  danger: string;
-  dangerBg: string;
-  statusBar: string;
-  headerBg: string;
-  headerText: string;
-}
+import { FileData, ThemeColors } from "../app.types";
+import useStorePdf from "../hooks/use-store-pdf";
 
 export default () => {
   const deviceTheme = useColorScheme();
@@ -53,6 +31,7 @@ export default () => {
   const [file, setFile] = useState<FileData | null>(null);
   const [isProcessing, setIsProcessing] = useState<boolean>(false);
   const [selectedView, setSelectedView] = useState<"grid" | "list">("grid");
+  const { storePdfToSecureStorage } = useStorePdf();
 
   const colors: ThemeColors = isDarkMode
     ? {
@@ -208,13 +187,18 @@ export default () => {
 
       const fileInfo = await FileSystem.getInfoAsync(pdfUri);
 
-      setFile({
+      const pdfData = {
         uri: pdfUri,
         name: fileName,
         size: fileInfo.exists ? (fileInfo as any).size || 0 : 0,
         mimeType: "application/pdf",
         data: pdfBytes,
-      });
+      };
+
+      setFile(pdfData);
+
+      // Store PDF to SecureStore and navigate to library
+      await storePdfToSecureStorage(pdfData);
 
       Alert.alert(
         "PDF Created Successfully",
