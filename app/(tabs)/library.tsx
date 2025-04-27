@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useCallback } from "react";
 import {
   View,
   Text,
@@ -12,6 +12,7 @@ import tw from "tailwind-react-native-classnames";
 import * as SecureStore from "expo-secure-store";
 import * as Sharing from "expo-sharing";
 import { Ionicons } from "@expo/vector-icons";
+import { useFocusEffect } from "expo-router";
 
 interface PDFMetadata {
   uri: string;
@@ -37,9 +38,11 @@ export default function LibraryPage() {
     border: isDarkMode ? "border-gray-700" : "border-gray-200",
   };
 
-  useEffect(() => {
-    fetchPdfFiles();
-  }, []);
+  useFocusEffect(
+    useCallback(() => {
+      fetchPdfFiles();
+    }, [])
+  );
 
   const fetchPdfFiles = async () => {
     try {
@@ -128,7 +131,7 @@ export default function LibraryPage() {
     const formattedSize = (item.size / 1024).toFixed(1) + " KB";
 
     return (
-      <View style={tw` p-4 mb-3 rounded-lg shadow-md`}>
+      <View style={tw`p-4 mb-3 rounded-lg border border-white`}>
         <View style={tw`flex-row items-center`}>
           <View style={tw`p-3 bg-blue-100 rounded-lg mr-3`}>
             <Ionicons name="document-text" size={24} color="#3b82f6" />

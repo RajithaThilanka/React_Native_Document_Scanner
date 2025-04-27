@@ -301,22 +301,31 @@ export default () => {
         </View>
       </View>
       {scannedImages.length > 0 && (
-        <View style={tw`flex-row mt-3`}>
+        <View style={tw`flex-row mt-3 items-center justify-between`}>
+          <View style={tw`flex-row`}>
+            <TouchableOpacity
+              style={tw`${
+                selectedView === "grid" ? "bg-blue-700" : "bg-transparent"
+              } px-3 py-1 mr-2 rounded-full`}
+              onPress={() => setSelectedView("grid")}
+            >
+              <Text style={tw`${colors.headerText}`}>Grid</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={tw`${
+                selectedView === "list" ? "bg-blue-700" : "bg-transparent"
+              } px-3 py-1 rounded-full`}
+              onPress={() => setSelectedView("list")}
+            >
+              <Text style={tw`${colors.headerText}`}>List</Text>
+            </TouchableOpacity>
+          </View>
+
           <TouchableOpacity
-            style={tw`${
-              selectedView === "grid" ? "bg-blue-700" : "bg-transparent"
-            } px-3 py-1 mr-2 rounded-full`}
-            onPress={() => setSelectedView("grid")}
+            style={tw`px-4 py-2 rounded bg-red-100`}
+            onPress={clearAllImages}
           >
-            <Text style={tw`${colors.headerText}`}>Grid</Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={tw`${
-              selectedView === "list" ? "bg-blue-700" : "bg-transparent"
-            } px-3 py-1 rounded-full`}
-            onPress={() => setSelectedView("list")}
-          >
-            <Text style={tw`${colors.headerText}`}>List</Text>
+            <Text style={tw`text-red-500 font-semibold`}>Clear All</Text>
           </TouchableOpacity>
         </View>
       )}
@@ -389,81 +398,85 @@ export default () => {
   }
 
   const GridView = (): JSX.Element => (
-    <FlatList
-      data={scannedImages}
-      numColumns={2}
-      contentContainerStyle={tw`p-2`}
-      style={tw`${colors.background}`}
-      keyExtractor={(_, index) => index.toString()}
-      renderItem={({ item, index }: RenderItemProps) => (
-        <View style={tw`w-1/2 p-1`}>
-          <View
-            style={tw`${colors.card} rounded-lg shadow overflow-hidden ${colors.border}`}
-          >
-            <TouchableOpacity onLongPress={() => removeImage(index)}>
-              <Image
-                source={{ uri: item }}
-                style={tw`h-40 w-full`}
-                resizeMode="cover"
-              />
-            </TouchableOpacity>
-            <View style={tw`p-2 flex-row justify-between items-center`}>
-              <Text style={tw`text-xs ${colors.subtext}`}>
-                Page {index + 1}
-              </Text>
-              <TouchableOpacity onPress={() => removeImage(index)}>
-                <Text style={tw`${colors.danger} text-xs`}>Remove</Text>
+    <View style={tw`flex-1`}>
+      <FlatList
+        data={scannedImages}
+        numColumns={2}
+        contentContainerStyle={tw`p-2`}
+        style={tw`${colors.background}`}
+        keyExtractor={(_, index) => index.toString()}
+        renderItem={({ item, index }: RenderItemProps) => (
+          <View style={tw`w-1/2 p-1`}>
+            <View
+              style={tw`${colors.card} rounded-lg shadow overflow-hidden ${colors.border}`}
+            >
+              <TouchableOpacity onLongPress={() => removeImage(index)}>
+                <Image
+                  source={{ uri: item }}
+                  style={tw`h-40 w-full`}
+                  resizeMode="cover"
+                />
               </TouchableOpacity>
+              <View style={tw`p-2 flex-row justify-between items-center`}>
+                <Text style={tw`text-xs ${colors.subtext}`}>
+                  Page {index + 1}
+                </Text>
+                <TouchableOpacity onPress={() => removeImage(index)}>
+                  <Text style={tw`${colors.danger} text-xs`}>Remove</Text>
+                </TouchableOpacity>
+              </View>
             </View>
           </View>
-        </View>
-      )}
-    />
+        )}
+      />
+    </View>
   );
 
   const ListView = (): JSX.Element => (
-    <FlatList
-      data={scannedImages}
-      contentContainerStyle={tw`p-2`}
-      style={tw`${colors.background}`}
-      keyExtractor={(_, index) => index.toString()}
-      renderItem={({ item, index }: RenderItemProps) => (
-        <View
-          style={tw`mb-3 ${colors.card} rounded-lg shadow-md overflow-hidden`}
-        >
-          <View style={tw`flex-row`}>
-            <Image
-              source={{ uri: item }}
-              style={tw`h-24 w-24`}
-              resizeMode="cover"
-            />
-            <View style={tw`p-3 flex-1 justify-between`}>
-              <View>
-                <Text style={tw`font-bold ${colors.text}`}>
-                  Page {index + 1}
-                </Text>
-                <Text style={tw`text-xs ${colors.subtext} mt-1`}>
-                  Tap and hold to preview
-                </Text>
+    <View style={tw`flex-1`}>
+      <FlatList
+        data={scannedImages}
+        contentContainerStyle={tw`p-2`}
+        style={tw`${colors.background}`}
+        keyExtractor={(_, index) => index.toString()}
+        renderItem={({ item, index }: RenderItemProps) => (
+          <View
+            style={tw`mb-3 ${colors.card} rounded-lg shadow-md overflow-hidden`}
+          >
+            <View style={tw`flex-row`}>
+              <Image
+                source={{ uri: item }}
+                style={tw`h-24 w-24`}
+                resizeMode="cover"
+              />
+              <View style={tw`p-3 flex-1 justify-between`}>
+                <View>
+                  <Text style={tw`font-bold ${colors.text}`}>
+                    Page {index + 1}
+                  </Text>
+                  <Text style={tw`text-xs ${colors.subtext} mt-1`}>
+                    Tap and hold to preview
+                  </Text>
+                </View>
+                <TouchableOpacity
+                  style={tw`${colors.dangerBg} px-2 py-1 rounded self-start`}
+                  onPress={() => removeImage(index)}
+                >
+                  <Text style={tw`${colors.danger} text-xs`}>Remove</Text>
+                </TouchableOpacity>
               </View>
-              <TouchableOpacity
-                style={tw`${colors.dangerBg} px-2 py-1 rounded self-start`}
-                onPress={() => removeImage(index)}
-              >
-                <Text style={tw`${colors.danger} text-xs`}>Remove</Text>
-              </TouchableOpacity>
             </View>
           </View>
-        </View>
-      )}
-    />
+        )}
+      />
+    </View>
   );
 
   const renderPDFDetails = (): JSX.Element | null => {
     if (!file) return null;
 
     return (
-      <View style={tw`p-4 ${colors.card} rounded-lg shadow-md mx-4 mb-4`}>
+      <View style={tw`p-4 ${colors.card} rounded-lg shadow-md mx-4 mb-4 mt-4`}>
         <Text style={tw`text-lg font-bold mb-2 ${colors.text}`}>
           PDF Created
         </Text>
