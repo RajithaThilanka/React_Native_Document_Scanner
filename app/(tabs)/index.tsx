@@ -45,18 +45,15 @@ interface ThemeColors {
 }
 
 export default () => {
-  // Theme setup
   const deviceTheme = useColorScheme();
   const [isDarkMode, setIsDarkMode] = useState<boolean>(deviceTheme === "dark");
 
-  // App state
   const [scannedImages, setScannedImages] = useState<string[]>([]);
   const [hasPermission, setHasPermission] = useState<boolean | null>(null);
   const [file, setFile] = useState<FileData | null>(null);
   const [isProcessing, setIsProcessing] = useState<boolean>(false);
   const [selectedView, setSelectedView] = useState<"grid" | "list">("grid");
 
-  // Theme colors based on dark/light mode
   const colors: ThemeColors = isDarkMode
     ? {
         background: "bg-gray-900",
@@ -69,7 +66,7 @@ export default () => {
         accent: "bg-green-600",
         danger: "text-red-400",
         dangerBg: "bg-red-900 bg-opacity-30",
-        statusBar: "#1f2937", // dark gray for status bar
+        statusBar: "#1f2937",
         headerBg: "bg-gray-800",
         headerText: "text-white",
       }
@@ -84,12 +81,11 @@ export default () => {
         accent: "bg-green-600",
         danger: "text-red-500",
         dangerBg: "bg-red-50",
-        statusBar: "#2563eb", // blue for status bar
+        statusBar: "#2563eb",
         headerBg: "bg-blue-800",
         headerText: "text-white",
       };
 
-  // Toggle theme function
   const toggleTheme = (): void => {
     setIsDarkMode((prev) => !prev);
   };
@@ -302,7 +298,6 @@ export default () => {
           React Native Document Scanner
         </Text>
         <View style={tw`flex-row items-center`}>
-          {/* Theme toggle */}
           <View style={tw`flex-row items-center mr-4`}>
             <Text style={tw`${colors.headerText} mr-2`}>
               {isDarkMode ? "🌙" : "☀️"}
@@ -314,7 +309,6 @@ export default () => {
               thumbColor={isDarkMode ? "#ffffff" : "#f4f3f4"}
             />
           </View>
-          {/* Clear all button */}
           {scannedImages.length > 0 && (
             <TouchableOpacity onPress={clearAllImages}>
               <Text style={tw`${colors.headerText}`}>Clear All</Text>
